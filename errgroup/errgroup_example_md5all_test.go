@@ -12,8 +12,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-
-	"golang.org/x/sync/errgroup"
+	
+	"github.com/gozelle/sync/errgroup"
 )
 
 // Pipeline demonstrates the use of a Group to implement a multi-stage
@@ -24,7 +24,7 @@ func ExampleGroup_pipeline() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	
 	for k, sum := range m {
 		fmt.Printf("%s:\t%x\n", k, sum)
 	}
@@ -44,7 +44,7 @@ func MD5All(ctx context.Context, root string) (map[string][md5.Size]byte, error)
 	// and the memory they were using can be garbage-collected.
 	g, ctx := errgroup.WithContext(ctx)
 	paths := make(chan string)
-
+	
 	g.Go(func() error {
 		defer close(paths)
 		return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -62,7 +62,7 @@ func MD5All(ctx context.Context, root string) (map[string][md5.Size]byte, error)
 			return nil
 		})
 	})
-
+	
 	// Start a fixed number of goroutines to read and digest files.
 	c := make(chan result)
 	const numDigesters = 20
@@ -86,7 +86,7 @@ func MD5All(ctx context.Context, root string) (map[string][md5.Size]byte, error)
 		g.Wait()
 		close(c)
 	}()
-
+	
 	m := make(map[string][md5.Size]byte)
 	for r := range c {
 		m[r.path] = r.sum

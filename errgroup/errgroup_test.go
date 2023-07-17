@@ -13,8 +13,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"golang.org/x/sync/errgroup"
+	
+	"github.com/gozelle/sync/errgroup"
 )
 
 var (
@@ -67,7 +67,7 @@ func ExampleGroup_justErrors() {
 func ExampleGroup_parallel() {
 	Google := func(ctx context.Context, query string) ([]Result, error) {
 		g, ctx := errgroup.WithContext(ctx)
-
+		
 		searches := []Search{Web, Image, Video}
 		results := make([]Result, len(searches))
 		for i, search := range searches {
@@ -85,7 +85,7 @@ func ExampleGroup_parallel() {
 		}
 		return results, nil
 	}
-
+	
 	results, err := Google(context.Background(), "golang")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -94,7 +94,7 @@ func ExampleGroup_parallel() {
 	for _, result := range results {
 		fmt.Println(result)
 	}
-
+	
 	// Output:
 	// web result for "golang"
 	// image result for "golang"
@@ -104,7 +104,7 @@ func ExampleGroup_parallel() {
 func TestZeroGroup(t *testing.T) {
 	err1 := errors.New("errgroup_test: 1")
 	err2 := errors.New("errgroup_test: 2")
-
+	
 	cases := []struct {
 		errs []error
 	}{
@@ -114,19 +114,19 @@ func TestZeroGroup(t *testing.T) {
 		{errs: []error{err1, nil}},
 		{errs: []error{err1, nil, err2}},
 	}
-
+	
 	for _, tc := range cases {
 		g := new(errgroup.Group)
-
+		
 		var firstErr error
 		for i, err := range tc.errs {
 			err := err
 			g.Go(func() error { return err })
-
+			
 			if firstErr == nil && err != nil {
 				firstErr = err
 			}
-
+			
 			if gErr := g.Wait(); gErr != firstErr {
 				t.Errorf("after %T.Go(func() error { return err }) for err in %v\n"+
 					"g.Wait() = %v; want %v",
@@ -138,7 +138,7 @@ func TestZeroGroup(t *testing.T) {
 
 func TestWithContext(t *testing.T) {
 	errDoom := errors.New("group_test: doomed")
-
+	
 	cases := []struct {
 		errs []error
 		want error
@@ -148,21 +148,21 @@ func TestWithContext(t *testing.T) {
 		{errs: []error{errDoom}, want: errDoom},
 		{errs: []error{errDoom, nil}, want: errDoom},
 	}
-
+	
 	for _, tc := range cases {
 		g, ctx := errgroup.WithContext(context.Background())
-
+		
 		for _, err := range tc.errs {
 			err := err
 			g.Go(func() error { return err })
 		}
-
+		
 		if err := g.Wait(); err != tc.want {
 			t.Errorf("after %T.Go(func() error { return err }) for err in %v\n"+
 				"g.Wait() = %v; want %v",
 				g, tc.errs, err, tc.want)
 		}
-
+		
 		canceled := false
 		select {
 		case <-ctx.Done():
@@ -200,13 +200,13 @@ func TestTryGo(t *testing.T) {
 		}
 	}()
 	g.Wait()
-
+	
 	if !g.TryGo(fn) {
 		t.Fatalf("TryGo should success but got fail after all goroutines.")
 	}
 	go func() { <-ch }()
 	g.Wait()
-
+	
 	// Switch limit.
 	g.SetLimit(1)
 	if !g.TryGo(fn) {
@@ -217,7 +217,7 @@ func TestTryGo(t *testing.T) {
 	}
 	go func() { <-ch }()
 	g.Wait()
-
+	
 	// Block all calls.
 	g.SetLimit(0)
 	for i := 0; i < 1<<10; i++ {
@@ -230,7 +230,7 @@ func TestTryGo(t *testing.T) {
 
 func TestGoLimit(t *testing.T) {
 	const limit = 10
-
+	
 	g := &errgroup.Group{}
 	g.SetLimit(limit)
 	var active int32

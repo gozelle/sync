@@ -11,8 +11,8 @@ import (
 	"context"
 	"fmt"
 	"testing"
-
-	"golang.org/x/sync/semaphore"
+	
+	"github.com/gozelle/sync/semaphore"
 )
 
 // weighted is an interface matching a subset of *Weighted.  It allows
@@ -42,7 +42,7 @@ func (s semChan) TryAcquire(n int64) bool {
 	if int64(len(s))+n > int64(cap(s)) {
 		return false
 	}
-
+	
 	for i := int64(0); i < n; i++ {
 		s <- struct{}{}
 	}

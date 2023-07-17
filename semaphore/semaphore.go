@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package semaphore provides a weighted semaphore implementation.
-package semaphore // import "golang.org/x/sync/semaphore"
+package semaphore // import "github.com/gozelle/sync/semaphore"
 
 import (
 	"container/list"
@@ -44,19 +44,19 @@ func (s *Weighted) Acquire(ctx context.Context, n int64) error {
 		s.mu.Unlock()
 		return nil
 	}
-
+	
 	if n > s.size {
 		// Don't make other Acquire calls block on one that's doomed to fail.
 		s.mu.Unlock()
 		<-ctx.Done()
 		return ctx.Err()
 	}
-
+	
 	ready := make(chan struct{})
 	w := waiter{n: n, ready: ready}
 	elem := s.waiters.PushBack(w)
 	s.mu.Unlock()
-
+	
 	select {
 	case <-ctx.Done():
 		err := ctx.Err()
@@ -76,7 +76,7 @@ func (s *Weighted) Acquire(ctx context.Context, n int64) error {
 		}
 		s.mu.Unlock()
 		return err
-
+	
 	case <-ready:
 		return nil
 	}
@@ -112,7 +112,7 @@ func (s *Weighted) notifyWaiters() {
 		if next == nil {
 			break // No more waiters blocked.
 		}
-
+		
 		w := next.Value.(waiter)
 		if s.size-s.cur < w.n {
 			// Not enough tokens for the next waiter.  We could keep going (to try to
@@ -128,7 +128,7 @@ func (s *Weighted) notifyWaiters() {
 			// reader.
 			break
 		}
-
+		
 		s.cur += w.n
 		s.waiters.Remove(next)
 		close(w.ready)

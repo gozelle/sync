@@ -4,7 +4,7 @@
 
 // Package singleflight provides a duplicate function call suppression
 // mechanism.
-package singleflight // import "golang.org/x/sync/singleflight"
+package singleflight // import "github.com/gozelle/sync/singleflight"
 
 import (
 	"bytes"
@@ -33,7 +33,7 @@ func (p *panicError) Error() string {
 
 func newPanicError(v interface{}) error {
 	stack := debug.Stack()
-
+	
 	// The first line of the stack trace is of the form "goroutine N [status]:"
 	// but by the time the panic reaches Do the goroutine may no longer exist
 	// and its status will have changed. Trim out the misleading line.
@@ -46,12 +46,12 @@ func newPanicError(v interface{}) error {
 // call is an in-flight or completed singleflight.Do call
 type call struct {
 	wg sync.WaitGroup
-
+	
 	// These fields are written once before the WaitGroup is done
 	// and are only read after the WaitGroup is done.
 	val interface{}
 	err error
-
+	
 	// These fields are read and written with the singleflight
 	// mutex held before the WaitGroup is done, and are read but
 	// not written after the WaitGroup is done.
@@ -88,7 +88,7 @@ func (g *Group) Do(key string, fn func() (interface{}, error)) (v interface{}, e
 		c.dups++
 		g.mu.Unlock()
 		c.wg.Wait()
-
+		
 		if e, ok := c.err.(*panicError); ok {
 			panic(e)
 		} else if c.err == errGoexit {
@@ -100,7 +100,7 @@ func (g *Group) Do(key string, fn func() (interface{}, error)) (v interface{}, e
 	c.wg.Add(1)
 	g.m[key] = c
 	g.mu.Unlock()
-
+	
 	g.doCall(c, key, fn)
 	return c.val, c.err, c.dups > 0
 }
@@ -125,9 +125,9 @@ func (g *Group) DoChan(key string, fn func() (interface{}, error)) <-chan Result
 	c.wg.Add(1)
 	g.m[key] = c
 	g.mu.Unlock()
-
+	
 	go g.doCall(c, key, fn)
-
+	
 	return ch
 }
 
@@ -135,7 +135,7 @@ func (g *Group) DoChan(key string, fn func() (interface{}, error)) <-chan Result
 func (g *Group) doCall(c *call, key string, fn func() (interface{}, error)) {
 	normalReturn := false
 	recovered := false
-
+	
 	// use double-defer to distinguish panic from runtime.Goexit,
 	// more details see https://golang.org/cl/134395
 	defer func() {
@@ -143,14 +143,14 @@ func (g *Group) doCall(c *call, key string, fn func() (interface{}, error)) {
 		if !normalReturn && !recovered {
 			c.err = errGoexit
 		}
-
+		
 		g.mu.Lock()
 		defer g.mu.Unlock()
 		c.wg.Done()
 		if g.m[key] == c {
 			delete(g.m, key)
 		}
-
+		
 		if e, ok := c.err.(*panicError); ok {
 			// In order to prevent the waiting channels from being blocked forever,
 			// needs to ensure that this panic cannot be recovered.
@@ -169,7 +169,7 @@ func (g *Group) doCall(c *call, key string, fn func() (interface{}, error)) {
 			}
 		}
 	}()
-
+	
 	func() {
 		defer func() {
 			if !normalReturn {
@@ -185,11 +185,11 @@ func (g *Group) doCall(c *call, key string, fn func() (interface{}, error)) {
 				}
 			}
 		}()
-
+		
 		c.val, c.err = fn()
 		normalReturn = true
 	}()
-
+	
 	if !normalReturn {
 		recovered = true
 	}

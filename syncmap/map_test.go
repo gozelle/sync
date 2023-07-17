@@ -11,8 +11,8 @@ import (
 	"sync"
 	"testing"
 	"testing/quick"
-
-	"golang.org/x/sync/syncmap"
+	
+	"github.com/gozelle/sync/syncmap"
 )
 
 type mapOp string
@@ -76,13 +76,13 @@ func applyCalls(m mapInterface, calls []mapCall) (results []mapResult, final map
 		v, ok := c.apply(m)
 		results = append(results, mapResult{v, ok})
 	}
-
+	
 	final = make(map[interface{}]interface{})
 	m.Range(func(k, v interface{}) bool {
 		final[k] = v
 		return true
 	})
-
+	
 	return results, final
 }
 
@@ -112,12 +112,12 @@ func TestMapMatchesDeepCopy(t *testing.T) {
 
 func TestConcurrentRange(t *testing.T) {
 	const mapSize = 1 << 10
-
+	
 	m := new(syncmap.Map)
 	for n := int64(1); n <= mapSize; n++ {
 		m.Store(n, n)
 	}
-
+	
 	done := make(chan struct{})
 	var wg sync.WaitGroup
 	defer func() {
@@ -145,14 +145,14 @@ func TestConcurrentRange(t *testing.T) {
 			}
 		}(g)
 	}
-
+	
 	iters := 1 << 10
 	if testing.Short() {
 		iters = 16
 	}
 	for n := iters; n > 0; n-- {
 		seen := make(map[int64]bool, mapSize)
-
+		
 		m.Range(func(ki, vi interface{}) bool {
 			k, v := ki.(int64), vi.(int64)
 			if v%k != 0 {
@@ -164,7 +164,7 @@ func TestConcurrentRange(t *testing.T) {
 			seen[k] = true
 			return true
 		})
-
+		
 		if len(seen) != mapSize {
 			t.Fatalf("Range visited %v elements of %v-element Map", len(seen), mapSize)
 		}
